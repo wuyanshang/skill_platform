@@ -1,0 +1,20 @@
+server:
+  port: 8080
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+spring:
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:your-api-key-here}
+      chat:
+        options:
+          model: qwen-max
+          temperature: 0.1
+
+skill:
+  directory: ./skills           # Skill 目录（页面上展示供用户选择）
+  agent-directory: ./agents     # Agent 目录（被 Skill 通过 spawn_agent 调用）
+  work-directory: .             # Shell/Python 工具的工作目录

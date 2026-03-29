@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill 执行平台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, "Segoe UI", sans-serif; background: #f5f7fa; color: #333; }
+        .container { max-width: 860px; margin: 32px auto; padding: 0 20px; }
+        h1 { font-size: 22px; margin-bottom: 20px; }
+        h2 { font-size: 15px; color: #666; margin-bottom: 12px; }
+
+        .card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+
+        /* tabs */
+        .tabs { display: flex; gap: 0; margin-bottom: 16px; }
+        .tab { padding: 10px 20px; cursor: pointer; font-size: 14px; font-weight: 600;
+               border: 1px solid #e0e0e0; background: #fafafa; color: #666; }
+        .tab:first-child { border-radius: 8px 0 0 8px; }
+        .tab:last-child { border-radius: 0 8px 8px 0; }
+        .tab.active { background: #409eff; color: #fff; border-color: #409eff; }
+
+        /* skill list */
+        .skill-list { display: grid; gap: 8px; margin-bottom: 16px; }
+        .skill-item { border: 2px solid #eee; border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: all .12s; display: flex; justify-content: space-between; align-items: center; }
+        .skill-item:hover { border-color: #409eff; background: #f7fbff; }
+        .skill-item.selected { border-color: #409eff; background: #ecf5ff; }
+        .skill-item .info .name { font-weight: 600; font-size: 14px; }
+        .skill-item .info .desc { font-size: 12px; color: #999; margin-top: 2px; }
+        .skill-item .del-btn { font-size: 12px; color: #f56c6c; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+        .skill-item .del-btn:hover { background: #fef0f0; }
+
+        .empty { color: #ccc; font-size: 13px; text-align: center; padding: 20px; }
+
+        /* form */
+        textarea { width: 100%; min-height: 90px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; font-size: 14px; resize: vertical; font-family: inherit; }
+        textarea:focus { outline: none; border-color: #409eff; }
+        input[type=text] { width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; font-size: 14px; }
+        input[type=text]:focus { outline: none; border-color: #409eff; }
+
+        .file-area { border: 2px dashed #ddd; border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; color: #bbb; font-size: 13px; transition: all .12s; }
+        .file-area:hover { border-color: #409eff; color: #409eff; }
+        .file-area.has-file { border-color: #67c23a; color: #67c23a; }
+        .file-area input { display: none; }
+
+        .row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .row > * { flex: 1; }
+
+        .btn { display: inline-block; padding: 10px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .12s; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-primary { background: #409eff; color: #fff; }
+        .btn-primary:hover { background: #337ecc; }
+        .btn-primary:disabled { background: #a0cfff; cursor: not-allowed; }
+        .btn-success { background: #67c23a; color: #fff; }
+        .btn-success:hover { background: #529b2e; }
+
+        .result-box { background: #fafafa; border: 1px solid #e8e8e8; border-radius: 8px; padding: 14px; white-space: pre-wrap; word-break: break-all; font-size: 13px; line-height: 1.6; max-height: 500px; overflow-y: auto; display: none; }
+        .result-box.show { display: block; }
+
+        .loading { display: none; text-align: center; padding: 16px; color: #999; font-size: 13px; }
+        .loading.show { display: block; }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #409eff; border-radius: 50%; animation: spin .5s linear infinite; vertical-align: middle; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Skill 执行平台</h1>
+
+    <!-- 上传区 -->
+    <div class="card">
+        <h2>上传 Skill / Agent</h2>
+        <div class="row">
+            <div>
+                <select id="uploadType" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:14px">
+                    <option value="skill">Skill（用户选择执行）</option>
+                    <option value="agent">Agent（被 Skill 调用的子智能体）</option>
+                </select>
+            </div>
+            <div><input type="text" id="uploadName" placeholder="名称，如 ambiguity-detection"></div>
+        </div>
+        <div class="row" style="align-items:center">
+            <div class="file-area" id="uploadArea" onclick="document.getElementById('uploadFile').click()" style="flex:2">
+                点击选择 SKILL.md 文件
+                <input type="file" id="uploadFile" accept=".md,.txt">
+            </div>
+            <div><button class="btn btn-success btn-sm" onclick="uploadSkill()">上传</button></div>
+        </div>
+    </div>
+
+    <!-- Skill / Agent 列表 -->
+    <div class="card">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('skill')">Skills</div>
+            <div class="tab" onclick="switchTab('agent')">Agents</div>
+        </div>
+        <div class="skill-list" id="itemList"><div class="empty">加载中...</div></div>
+    </div>
+
+    <!-- 执行区 -->
+    <div class="card">
+        <h2>任务描述</h2>
+        <textarea id="inputText" placeholder="描述你希望 Agent 做什么..."></textarea>
+        <div style="margin-top:10px">
+            <div class="file-area" id="execFileArea" onclick="document.getElementById('execFile').click()">
+                附件（可选）：点击上传待处理文件
+                <input type="file" id="execFile">
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align:center;margin:16px 0">
+        <button class="btn btn-primary" id="execBtn" onclick="execute()">执行</button>
+    </div>
+
+    <div class="loading" id="loading"><span class="spinner"></span>Agent 正在执行，请稍候...</div>
+
+    <div class="card">
+        <h2>执行结果</h2>
+        <div class="result-box" id="resultBox"></div>
+    </div>
+</div>
+
+<script>
+let selectedSkill = null;
+let currentTab = 'skill';
+
+async function loadList(type) {
+    const url = type === 'agent' ? '/api/agents' : '/api/skills';
+    try {
+        const res = await fetch(url);
+        const items = await res.json();
+        const list = document.getElementById('itemList');
+        if (!items.length) { list.innerHTML = '<div class="empty">暂无，请上传</div>'; return; }
+        list.innerHTML = items.map(s => `
+            <div class="skill-item ${currentTab === 'skill' ? '' : 'no-select'} ${selectedSkill === s.name && currentTab === 'skill' ? 'selected' : ''}"
+                 onclick="${currentTab === 'skill' ? `selectSkill(this,'${s.name}')` : ''}">
+                <div class="info">
+                    <div class="name">${s.name}</div>
+                    <div class="desc">${s.description || '暂无描述'}</div>
+                </div>
+                <span class="del-btn" onclick="event.stopPropagation();removeItem('${type}','${s.name}')">删除</span>
+            </div>
+        `).join('');
+    } catch (e) {
+        document.getElementById('itemList').innerHTML = '<div class="empty" style="color:#f56c6c">加载失败: ' + e.message + '</div>';
+    }
+}
+
+function switchTab(type) {
+    currentTab = type;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    loadList(type);
+}
+
+function selectSkill(el, name) {
+    document.querySelectorAll('.skill-item').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedSkill = name;
+}
+
+async function removeItem(type, name) {
+    if (!confirm(`确定删除 ${type} [${name}]？`)) return;
+    await fetch(`/api/remove?type=${type}&name=${encodeURIComponent(name)}`, { method: 'DELETE' });
+    if (selectedSkill === name) selectedSkill = null;
+    loadList(currentTab);
+}
+
+document.getElementById('uploadFile').addEventListener('change', function() {
+    const area = document.getElementById('uploadArea');
+    if (this.files.length) { area.textContent = this.files[0].name; area.classList.add('has-file'); }
+});
+document.getElementById('execFile').addEventListener('change', function() {
+    const area = document.getElementById('execFileArea');
+    if (this.files.length) { area.textContent = this.files[0].name; area.classList.add('has-file'); }
+});
+
+async function uploadSkill() {
+    const type = document.getElementById('uploadType').value;
+    const name = document.getElementById('uploadName').value.trim();
+    const fileInput = document.getElementById('uploadFile');
+    if (!name) { alert('请输入名称'); return; }
+    if (!fileInput.files.length) { alert('请选择 SKILL.md 文件'); return; }
+
+    const form = new FormData();
+    form.append('type', type);
+    form.append('name', name);
+    form.append('file', fileInput.files[0]);
+
+    try {
+        const res = await fetch('/api/upload', { method: 'POST', body: form });
+        const data = await res.json();
+        alert(data.message);
+        document.getElementById('uploadName').value = '';
+        document.getElementById('uploadArea').textContent = '点击选择 SKILL.md 文件';
+        document.getElementById('uploadArea').classList.remove('has-file');
+        fileInput.value = '';
+        loadList(type);
+    } catch (e) { alert('上传失败: ' + e.message); }
+}
+
+async function execute() {
+    if (!selectedSkill) { alert('请先在 Skills 标签页选择一个 Skill'); return; }
+    const input = document.getElementById('inputText').value.trim();
+    if (!input) { alert('请输入任务描述'); return; }
+
+    const btn = document.getElementById('execBtn');
+    const loading = document.getElementById('loading');
+    const resultBox = document.getElementById('resultBox');
+    btn.disabled = true; loading.classList.add('show'); resultBox.classList.remove('show');
+
+    try {
+        const execFile = document.getElementById('execFile');
+        let res;
+        if (execFile.files.length) {
+            const form = new FormData();
+            form.append('skillName', selectedSkill);
+            form.append('input', input);
+            form.append('file', execFile.files[0]);
+            res = await fetch('/api/execute/upload', { method: 'POST', body: form });
+        } else {
+            res = await fetch('/api/execute', { method: 'POST', body: new URLSearchParams({ skillName: selectedSkill, input }) });
+        }
+        const data = await res.json();
+        resultBox.textContent = typeof data.result === 'string' ? data.result : JSON.stringify(data, null, 2);
+        resultBox.classList.add('show');
+    } catch (e) {
+        resultBox.textContent = '请求失败: ' + e.message;
+        resultBox.classList.add('show');
+    } finally { btn.disabled = false; loading.classList.remove('show'); }
+}
+
+loadList('skill');
+</script>
+</body>
+</html>
