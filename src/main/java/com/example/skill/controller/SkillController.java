@@ -42,6 +42,10 @@ public class SkillController {
             @RequestParam String name,
             @RequestParam("file") MultipartFile file) throws IOException {
 
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("status", "error", "message", "上传的文件为空，请重新选择文件"));
+        }
         String content = new String(file.getBytes(), StandardCharsets.UTF_8);
         executionService.upload(type, name, content);
 
@@ -82,9 +86,18 @@ public class SkillController {
             @RequestParam String input,
             @RequestParam("file") MultipartFile file) throws IOException {
 
-        String filePath = executionService.saveUploadedFile(
-                file.getBytes(), file.getOriginalFilename());
+        if (file.isEmpty()) {
+            Map<String, Object> err = new LinkedHashMap<>();
+            err.put("skill", skillName);
+            err.put("result", "执行失败：上传的文件为空，请重新选择文件");
+            return ResponseEntity.badRequest().body(err);
+        }
 
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isBlank()) {
+            originalFilename = "upload_" + System.currentTimeMillis();
+        }
+        String filePath = executionService.saveUploadedFile(file.getBytes(), originalFilename);
         String result = executionService.execute(skillName, input, filePath);
         return ResponseEntity.ok(buildResult(skillName, result));
     }

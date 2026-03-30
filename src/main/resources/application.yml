@@ -1,11 +1,12 @@
 server:
   port: 8080
-  servlet:
-    multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
 
 spring:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:your-api-key-here}
