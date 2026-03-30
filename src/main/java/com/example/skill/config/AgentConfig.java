@@ -7,6 +7,7 @@ import com.alibaba.cloud.ai.graph.agent.tools.ShellTool2;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
 import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegistry;
+import com.example.skill.interceptor.ShellCommandInterceptor;
 import com.example.skill.service.SubAgentTool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
@@ -32,6 +33,9 @@ public class AgentConfig {
 
     @Value("${skill.work-directory:.}")
     private String workDirectory;
+
+    @Value("${skill.shell.forbidden-commands:rm -rf /,shutdown,reboot,format,mkfs,dd if=,:(){ :|:&}")
+    private List<String> forbiddenCommands;
 
     @Bean
     public SkillRegistry skillRegistry() throws IOException {
@@ -75,16 +79,24 @@ public class AgentConfig {
     }
 
     @Bean
+    public ShellCommandInterceptor shellCommandInterceptor() {
+        log.info("Shell 命令黑名单已加载: {}", forbiddenCommands);
+        return new ShellCommandInterceptor(forbiddenCommands);
+    }
+
+    @Bean
     public ReactAgent skillAgent(ChatModel chatModel,
                                  SkillsAgentHook skillsHook,
                                  ShellToolAgentHook shellHook,
-                                 SubAgentTool subAgentTool) {
+                                 SubAgentTool subAgentTool,
+                                 ShellCommandInterceptor shellInterceptor) {
         return ReactAgent.builder()
                 .name("skill-agent")
                 .model(chatModel)
                 .saver(new MemorySaver())
                 .methodTools(subAgentTool)
                 .hooks(List.of(skillsHook, shellHook))
+                .interceptors(shellInterceptor)
                 .enableLogging(true)
                 .build();
     }

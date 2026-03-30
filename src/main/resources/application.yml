@@ -21,4 +21,13 @@ spring:
 skill:
   directory: ./skills           # Skill 目录（页面上展示供用户选择）
   agent-directory: ./agents     # Agent 目录（被 Skill 通过 spawn_agent 调用）
-  work-directory: .             # Shell/Python 工具的工作目录
+  work-directory: .             # Shell 工具的工作目录
+  shell:
+    forbidden-commands:         # Shell 命令黑名单（逗号分隔，忽略大小写，匹配命令中任意位置）
+      - "rm -rf /"
+      - "shutdown"
+      - "reboot"
+      - "format"
+      - "mkfs"
+      - "dd if="
+      - ":(){ :|:&}"
