@@ -3,7 +3,6 @@ package com.example.skill.config;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.agent.hook.shelltool.ShellToolAgentHook;
 import com.alibaba.cloud.ai.graph.agent.hook.skills.SkillsAgentHook;
-import com.alibaba.cloud.ai.graph.agent.tools.PythonTool;
 import com.alibaba.cloud.ai.graph.agent.tools.ShellTool2;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.skills.registry.SkillRegistry;
@@ -84,7 +83,6 @@ public class AgentConfig {
                 .name("skill-agent")
                 .model(chatModel)
                 .saver(new MemorySaver())
-                .tools(PythonTool.createPythonToolCallback(PythonTool.DESCRIPTION))
                 .methodTools(subAgentTool)
                 .hooks(List.of(skillsHook, shellHook))
                 .enableLogging(true)

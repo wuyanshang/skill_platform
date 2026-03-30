@@ -118,8 +118,8 @@ public class SkillExecutionService {
         return registry.listAll().stream()
                 .map(meta -> {
                     Map<String, String> info = new LinkedHashMap<>();
-                    info.put("name", meta.name());
-                    info.put("description", meta.description());
+                    info.put("name", meta.getName());
+                    info.put("description", meta.getDescription());
                     return info;
                 })
                 .collect(Collectors.toList());

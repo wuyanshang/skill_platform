@@ -7,6 +7,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
+import java.util.List;
+
 /**
  * 子智能体工具：主 Agent 可以通过此工具启动一个子智能体来执行任务。
  * 子智能体的指令来自 agents/ 目录下的 SKILL.md。
@@ -34,15 +36,15 @@ public class SubAgentTool {
         log.info("启动子智能体 [{}]，输入长度: {} 字符", agentName, taskInput.length());
 
         if (!agentRegistry.contains(agentName)) {
-            String available = String.join(", ",
-                    agentRegistry.listAll().stream().map(m -> m.name()).toList());
+            List<String> names = agentRegistry.listAll().stream()
+                    .map(m -> m.getName()).toList();
+            String available = String.join(", ", names);
             return "子智能体不存在: " + agentName + "。可用子智能体: "
                     + (available.isEmpty() ? "（无）" : available);
         }
 
-        String agentInstruction = agentRegistry.readSkillContent(agentName);
-
         try {
+            String agentInstruction = agentRegistry.readSkillContent(agentName);
             String result = ChatClient.builder(chatModel)
                     .build()
                     .prompt()
