@@ -11,7 +11,6 @@ import com.alibaba.cloud.ai.graph.skills.registry.filesystem.FileSystemSkillRegi
 import com.example.skill.service.SubAgentTool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -35,9 +34,6 @@ public class AgentConfig {
     @Value("${skill.work-directory:.}")
     private String workDirectory;
 
-    /**
-     * Skill 注册表：用户页面上看到的可选 Skill 列表。
-     */
     @Bean
     public SkillRegistry skillRegistry() throws IOException {
         Files.createDirectories(Path.of(skillDirectory));
@@ -48,9 +44,6 @@ public class AgentConfig {
         return registry;
     }
 
-    /**
-     * Agent 注册表：存放可被 spawn_agent 工具调用的子智能体定义。
-     */
     @Bean("agentRegistry")
     public SkillRegistry agentRegistry() throws IOException {
         Files.createDirectories(Path.of(agentDirectory));
@@ -82,13 +75,6 @@ public class AgentConfig {
                 .build();
     }
 
-    /**
-     * 通用 ReactAgent，拥有以下能力：
-     * - read_skill：读取 skills/ 目录中的 Skill 指令（由 SkillsAgentHook 提供）
-     * - spawn_agent：启动 agents/ 目录中的子智能体（由 SubAgentTool 提供）
-     * - python：执行 Python 脚本（由 PythonTool 提供）
-     * - shell：执行 Shell 命令（由 ShellToolAgentHook 提供）
-     */
     @Bean
     public ReactAgent skillAgent(ChatModel chatModel,
                                  SkillsAgentHook skillsHook,
@@ -98,8 +84,8 @@ public class AgentConfig {
                 .name("skill-agent")
                 .model(chatModel)
                 .saver(new MemorySaver())
-                .tools(PythonTool.createPythonToolCallback(PythonTool.DESCRIPTION),
-                       ToolCallbacks.from(subAgentTool))
+                .tools(PythonTool.createPythonToolCallback(PythonTool.DESCRIPTION))
+                .methodTools(subAgentTool)
                 .hooks(List.of(skillsHook, shellHook))
                 .enableLogging(true)
                 .build();

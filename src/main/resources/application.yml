@@ -7,11 +7,15 @@ server:
 
 spring:
   ai:
-    dashscope:
-      api-key: ${DASHSCOPE_API_KEY:your-api-key-here}
+    openai:
+      api-key: ${OPENAI_API_KEY:your-api-key-here}
+      # DashScope OpenAI 兼容端点：https://dashscope.aliyuncs.com/compatible-mode/v1
+      # DeepSeek：https://api.deepseek.com
+      # 本地 Ollama：http://localhost:11434
+      base-url: ${OPENAI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
       chat:
         options:
-          model: qwen-max
+          model: ${OPENAI_MODEL:qwen-max}
           temperature: 0.1
 
 skill:
