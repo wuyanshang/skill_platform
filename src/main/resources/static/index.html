@@ -126,6 +126,12 @@
 let selectedSkill = null;
 let currentTab = 'skill';
 
+function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
 async function loadList(type) {
     const url = type === 'agent' ? '/api/agents' : '/api/skills';
     try {
@@ -133,16 +139,21 @@ async function loadList(type) {
         const items = await res.json();
         const list = document.getElementById('itemList');
         if (!items.length) { list.innerHTML = '<div class="empty">暂无，请上传</div>'; return; }
-        list.innerHTML = items.map(s => `
-            <div class="skill-item ${currentTab === 'skill' ? '' : 'no-select'} ${selectedSkill === s.name && currentTab === 'skill' ? 'selected' : ''}"
-                 onclick="${currentTab === 'skill' ? `selectSkill(this,'${s.name}')` : ''}">
-                <div class="info">
-                    <div class="name">${s.name}</div>
-                    <div class="desc">${s.description || '暂无描述'}</div>
-                </div>
-                <span class="del-btn" onclick="event.stopPropagation();removeItem('${type}','${s.name}')">删除</span>
-            </div>
-        `).join('');
+        list.innerHTML = '';
+        items.forEach((s, idx) => {
+            const row = document.createElement('div');
+            row.className = 'skill-item' + (selectedSkill === s.name && currentTab === 'skill' ? ' selected' : '');
+            if (currentTab === 'skill') {
+                row.addEventListener('click', () => selectSkill(row, s.name));
+            }
+            row.innerHTML = `<div class="info"><div class="name">${esc(s.name)}</div><div class="desc">${esc(s.description || '暂无描述')}</div></div>`;
+            const del = document.createElement('span');
+            del.className = 'del-btn';
+            del.textContent = '删除';
+            del.addEventListener('click', e => { e.stopPropagation(); removeItem(type, s.name); });
+            row.appendChild(del);
+            list.appendChild(row);
+        });
     } catch (e) {
         document.getElementById('itemList').innerHTML = '<div class="empty" style="color:#f56c6c">加载失败: ' + e.message + '</div>';
     }
@@ -151,7 +162,7 @@ async function loadList(type) {
 function switchTab(type) {
     currentTab = type;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+    this.event.target.closest('.tab').classList.add('active');
     loadList(type);
 }
 

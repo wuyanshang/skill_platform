@@ -45,6 +45,7 @@ public class SkillExecutionService {
     }
 
     public void upload(String type, String name, String content) throws IOException {
+        validateName(name);
         String baseDir = "agent".equals(type) ? agentDirectory : skillDirectory;
         Path dir = Path.of(baseDir, name);
         Files.createDirectories(dir);
@@ -54,14 +55,16 @@ public class SkillExecutionService {
     }
 
     public void delete(String type, String name) throws IOException {
+        validateName(name);
         String baseDir = "agent".equals(type) ? agentDirectory : skillDirectory;
         Path dir = Path.of(baseDir, name);
         if (Files.exists(dir)) {
-            Files.walk(dir)
-                    .sorted(Comparator.reverseOrder())
-                    .forEach(p -> {
-                        try { Files.delete(p); } catch (IOException ignored) {}
-                    });
+            try (var paths = Files.walk(dir)) {
+                paths.sorted(Comparator.reverseOrder())
+                        .forEach(p -> {
+                            try { Files.delete(p); } catch (IOException ignored) {}
+                        });
+            }
             log.info("已删除 {} [{}]", type, name);
             reloadRegistry(type);
         }
@@ -96,7 +99,8 @@ public class SkillExecutionService {
     public String saveUploadedFile(byte[] fileBytes, String originalFilename) throws IOException {
         Path uploadDir = Path.of("uploads");
         Files.createDirectories(uploadDir);
-        Path filePath = uploadDir.resolve(originalFilename);
+        String safeName = Path.of(originalFilename).getFileName().toString();
+        Path filePath = uploadDir.resolve(safeName);
         Files.write(filePath, fileBytes);
         log.info("文件已保存: {}", filePath.toAbsolutePath());
         return filePath.toAbsolutePath().toString();
@@ -111,6 +115,15 @@ public class SkillExecutionService {
             }
         } catch (UnsupportedOperationException e) {
             log.debug("Registry 不支持热加载，需要重启服务");
+        }
+    }
+
+    private void validateName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("名称不能为空");
+        }
+        if (name.contains("..") || name.contains("/") || name.contains("\\")) {
+            throw new IllegalArgumentException("名称包含非法字符: " + name);
         }
     }
 

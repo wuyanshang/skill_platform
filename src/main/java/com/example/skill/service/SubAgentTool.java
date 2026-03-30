@@ -53,6 +53,9 @@ public class SubAgentTool {
                     .call()
                     .content();
 
+            if (result == null || result.isBlank()) {
+                return "子智能体 [" + agentName + "] 未返回结果";
+            }
             log.info("子智能体 [{}] 执行完成，输出长度: {} 字符", agentName, result.length());
             return result;
         } catch (Exception e) {
