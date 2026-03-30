@@ -74,7 +74,10 @@ public class AgentConfig {
     @Bean
     public ShellToolAgentHook shellToolAgentHook() {
         return ShellToolAgentHook.builder()
-                .shellTool2(ShellTool2.builder(workDirectory).build())
+                .shellTool2(ShellTool2.builder(workDirectory)
+                        // 使用 cmd.exe，/Q 关闭回显，/D 禁用 AutoRun，/C 执行命令后退出
+                        .withShellCommand(List.of("cmd.exe", "/Q", "/D", "/C"))
+                        .build())
                 .build();
     }
 
